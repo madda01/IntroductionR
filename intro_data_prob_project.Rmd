@@ -1,0 +1,218 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+### Load data
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+## Part 1: Data
+
+The observations in the sample are collected by the Behavioral Risk Factor Surveillance System (BRFSS). This is a collaborative project between all of the states in the United States and participating US territories and the Centers for Disease Control and Prevention (CDC). 
+
+This survey was conducted regarding the health status of adult US citizens and their health-related issues. A total of *491775* residents aged 18 or above have participated in this and a total of *330* variables are used as metrics for future analysis.
+
+
+**Data’s generalisability:**
+
+Collected data are state-specific. After putting together all samples collected from all the states creates a large sample that can be generalized to the population of the US.
+
+The samples were collected through both land-line telephone and cellular telephone-based surveys. For the landline telephone survey, BRFSS collects data from a randomly selected adult in a household. And for the cellular telephone version, the BRFSS collect data from an adult who participates by using a cellular telephone and resides in a private residence or college housing.
+
+In summary, a large representative random sampling was drawn in both data collection methods. And the data for the sample is generalizable to the adult population of the states.
+
+
+**Causality:**
+
+These are a series of surveys conducted repeatedly to examine trends and issues in public health. To examine public health across the US in several years, compare health among people, and determine whether there are improvements
+
+In summary, this is an observational study. This is not an experimental study. Self-reported data were collected from residents based on their own experiences. Therefore causal relationships cannot be assumed.
+
+Only correlations can be drawn from the data.
+
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+
+For the general population is there a correlation between not having poor physical health and mental health are there differences based on resident's gender?
+
+Exploring whether there is an association between physical illness and mental illness.
+
+Variables used: sex ,  physhlth  ,  menthlth 
+
+
+**Research quesion 2:**
+
+For the general population is there any correlation between the level of education an individual obtained with the overall life satisfaction? And are there any noticeable differences in this correlation between gender?
+
+We can assume that there are noticeable trends in overall life satisfaction for those that push hard to achieve high levels of formal education. 
+
+Variables used: sex ,  educa  ,  lsatisfy 
+
+
+**Research quesion 3:**
+
+For the general population is there a relationship between income level, and physical activity?
+
+We can assume that higher-income may lead to more physical activity or higher income may lead to less time for people to engage in physical activity. 
+
+Variables used: income2 ,  exerany2  ,  employ1
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+**Research quesion 1:**
+
+Here I will examine if mental and physical health are related and do they differ from gender.
+
+Variables used:
+
+1. physhlth: Number Of Days Physical Health Not Good
+
+2. sex: Residents gender
+
+3. menthlth:  Number Of Days Mental Health Not Good
+
+
+Step 1: extract the data (remove all with NA) 
+
+```{r}
+people <- select(brfss2013, menthlth, physhlth, sex) %>%
+   filter(menthlth != "NA") %>% filter(physhlth != "NA") %>%  filter(sex != "NA")
+summary(people)
+```
+
+
+Step 2: Plot
+
+```{r}
+ggplot(data=people,aes(x=physhlth,y=menthlth,fill=sex))+
+  geom_area(alpha=.6,position = "identity") +
+  xlab("Physical health") +
+  ylab ("Mental health")
+  
+```
+
+
+The shapes of the smoothing curves look very similar. Both have the same numbers of peaks and valleys. We cannot come to a conclusion that there is a correlation and it differs from gender
+
+
+
+
+**Research quesion 2:**
+
+Here I will examine if the level of education an individual obtained with the overall life satisfaction and how it differs with the gender.
+
+
+Variables used:
+
+1. lsatisfy: Satisfaction with life 
+
+2. sex: Residents gender
+
+3. educa: Education Level they have obtained
+
+
+```{r}
+EduSex <- select(brfss2013, lsatisfy , sex, educa) %>% 
+  filter(!is.na(lsatisfy), !is.na(sex), !is.na(educa))
+
+EduSex %>% group_by(lsatisfy) %>%    summarise(count=n())
+
+```
+
+```{r}
+EduSex %>% group_by(educa) %>%   summarise(count=n())
+```
+
+
+```{r}
+EduSex %>% group_by(sex) %>%   summarise(count=n())
+```
+
+
+```{r}
+ ggplot(data = EduSex, aes(x = lsatisfy , y = educa ))+
+  geom_count () +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  facet_grid(. ~  sex) +
+  xlab("Satisfaction With Life") +
+  ylab ("Education Level")
+```
+
+Both genders are behaving similarly in the observation.
+Levels of Satisfied or Very Satisfied are those that have at least completed high school or the equivalent.
+Residents who never attending any education report either being satisfied or very satisfied with life.
+
+This result proves that education levels are not perfectly correlated with life satisfaction.
+
+
+
+**Research quesion 3:**
+
+Here I will examine if there is a relationship between income level, and physical activity?
+Data will be examined for the past 30 days
+
+
+Variables used:
+
+1. exerany2: Exercise in past 30 days
+
+2. income2: Income level
+
+3. employ1: Employment status
+
+
+
+First step: Remove all data with NA.
+
+```{r}
+paycheck <- filter(brfss2013, !is.na(exerany2), !is.na(income2), !is.na(employ1))
+```
+
+
+Second step: Find residents that perform exercise and group them by income.
+
+```{r}
+finalpay <- paycheck %>% group_by(income2) %>% summarise(prop_exer = sum(exerany2 == "Yes") / n())
+```
+
+
+Third step: plot
+
+```{r}
+#add line breaks
+levels(finalpay$income2) <- gsub(" ", "\n", levels(finalpay$income2))
+ggplot(finalpay, aes(income2, prop_exer)) +
+    geom_point(aes(income2, prop_exer)) +
+    labs(title="residents who exercised in last 30 days vs. their income", x="income", y="proportion exercese")
+```
+
+
+There appears to be a very strong relationship between exercising and income. 
+The more income the larger the proportion of exercise.
+This is an observational study and so that will not lead to any causality.
+
