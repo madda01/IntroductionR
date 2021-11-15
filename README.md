@@ -3,4 +3,5 @@
 2. Inferential Statistics
 
 Files for the Coursera specialization Statistics with R. 
-Contains the completed final project in both R Markdwon and HTML format. 
+
+Contains the completed final projects in both R Markdwon and HTML format. 
